@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>More'Wax — Gestionnaire de Collection Vinyle</title>
+  <meta name="description" content="Gestionnaire de collection vinyle auto-hébergé avec reconnaissance de pochettes par IA, scan de codes-barres et synchronisation Discogs. Pas de cloud, pas de compte, tourne sur votre machine.">
+  <meta name="keywords" content="vinyle, collection de disques, discogs, scanner de codes-barres, auto-hébergé, docker, musique, gestionnaire de collection vinyle">
+  <link rel="canonical" href="https://eboudrant.github.io/more-wax/fr/">
+  <!-- Open Graph -->
+  <meta property="og:title" content="More'Wax — Gestionnaire de Collection Vinyle">
+  <meta property="og:description" content="Vos vinyles. Votre serveur. Vos règles. Gestionnaire de collection auto-hébergé avec reconnaissance de pochettes par IA, scan de codes-barres et synchronisation Discogs.">
+  <meta property="og:image" content="https://eboudrant.github.io/more-wax/social-preview.png">
+  <meta property="og:url" content="https://eboudrant.github.io/more-wax/fr/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="More'Wax">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="More'Wax — Gestionnaire de Collection Vinyle">
+  <meta name="twitter:description" content="Vos vinyles. Votre serveur. Vos règles.">
+  <meta name="twitter:image" content="https://eboudrant.github.io/more-wax/social-preview.png">
+  <!-- Alternate languages -->
+  <link rel="alternate" hreflang="en" href="https://eboudrant.github.io/more-wax/">
+  <link rel="alternate" hreflang="ja" href="https://eboudrant.github.io/more-wax/ja/">
+  <link rel="alternate" hreflang="fr" href="https://eboudrant.github.io/more-wax/fr/">
+  <link rel="alternate" hreflang="de" href="https://eboudrant.github.io/more-wax/de/">
+  <link rel="alternate" hreflang="x-default" href="https://eboudrant.github.io/more-wax/">
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="https://raw.githubusercontent.com/eboudrant/more-wax/main/static/logo.svg">
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "More'Wax",
+    "description": "Gestionnaire de collection vinyle auto-hébergé avec reconnaissance de pochettes par IA, scan de codes-barres et synchronisation Discogs.",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "license": "https://opensource.org/licenses/MIT",
+    "url": "https://eboudrant.github.io/more-wax/fr/",
+    "downloadUrl": "https://hub.docker.com/r/eboudrant/more-wax",
+    "screenshot": "https://eboudrant.github.io/more-wax/social-preview.png",
+    "author": { "@type": "Person", "name": "Emmanuel Boudrant", "url": "https://github.com/eboudrant" }
+  }
+  </script>
+  <style>
+    :root {
+      --bg: #131313;
+      --surface: #201f1f;
+      --surface2: #2a2a2a;
+      --border: #4e453c;
+      --accent: #fddcb1;
+      --accent2: #e1c198;
+      --text: #e5e2e1;
+      --muted: #9a8f83;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(19,19,19,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(78,69,60,0.2);
+      padding: 0 24px;
+    }
+    .nav-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 56px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: var(--text);
+    }
+    .nav-logo img { width: 32px; height: 32px; border-radius: 50%; }
+    .nav-logo span { font-weight: 700; font-style: italic; font-size: 1.1rem; }
+    .nav-links { display: flex; gap: 24px; align-items: center; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 0.85rem;
+      font-weight: 500; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* ── SECTIONS ── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    section { padding: 80px 0; }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 120px 0 80px;
+      text-align: center;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(253,220,177,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-logo {
+      width: 80px; height: 80px; border-radius: 50%;
+      margin: 0 auto 24px;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 800; font-style: italic;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .hero .tagline {
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      color: var(--accent);
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+    .hero .subtitle {
+      font-size: 1rem;
+      color: var(--muted);
+      max-width: 540px;
+      margin: 0 auto 36px;
+    }
+    .hero-buttons {
+      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 28px; border-radius: 999px;
+      font-size: 0.9rem; font-weight: 600;
+      text-decoration: none; transition: all 0.2s;
+      border: none; cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent); color: var(--bg);
+    }
+    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-secondary {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent2); }
+
+    /* ── SCREENSHOTS ── */
+    .screenshots {
+      display: flex; justify-content: center; gap: 16px;
+      margin-top: 60px; flex-wrap: wrap;
+    }
+    .screenshots img {
+      width: 160px; border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transition: transform 0.3s;
+    }
+    .screenshots img:hover { transform: translateY(-4px); }
+
+    /* ── FEATURES ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid rgba(78,69,60,0.2);
+      border-radius: 12px;
+      padding: 24px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover {
+      border-color: rgba(253,220,177,0.3);
+      transform: translateY(-2px);
+    }
+    .feature-icon {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .feature-card h3 {
+      font-size: 0.95rem; font-weight: 600;
+      margin-bottom: 8px; color: var(--text);
+    }
+    .feature-card p {
+      font-size: 0.85rem; color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ── SECTION HEADERS ── */
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent2);
+      margin-bottom: 8px;
+    }
+    .section-title {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .section-desc {
+      color: var(--muted);
+      max-width: 500px;
+      margin-bottom: 40px;
+    }
+
+    /* ── INSTALL ── */
+    .install-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .install-card {
+      background: var(--surface);
+      border: 1px solid rgba(78,69,60,0.2);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .install-card h3 {
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 12px;
+    }
+    .install-card pre {
+      background: var(--bg);
+      border: 1px solid rgba(78,69,60,0.3);
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--muted);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .install-card p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid rgba(78,69,60,0.2);
+      padding: 40px 0;
+      text-align: center;
+    }
+    footer p {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+    footer a:hover { color: var(--accent); }
+    .footer-links {
+      display: flex; justify-content: center; gap: 24px;
+      margin-bottom: 16px;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width: 60px; height: 2px;
+      background: linear-gradient(90deg, var(--accent2), transparent);
+      margin-bottom: 40px;
+    }
+
+    /* ── FADE IN ── */
+    .fade-in {
+      opacity: 0; transform: translateY(20px);
+      transition: opacity 0.6s, transform 0.6s;
+    }
+    .fade-in.visible { opacity: 1; transform: none; }
+
+    /* ── LANG DROPDOWN ── */
+    .lang-dropdown {
+      position: relative; margin-left: 8px;
+      display: flex; align-items: center;
+      border-left: 1px solid var(--border); padding-left: 16px;
+    }
+    .lang-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 1.2rem; padding: 4px 8px; border-radius: 6px;
+      line-height: 1; display: flex; align-items: center;
+      transition: background 0.2s;
+    }
+    .lang-btn:hover { background: var(--surface2); }
+    .lang-menu {
+      display: none; position: absolute; top: 100%; right: 0;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 0; margin-top: 8px;
+      min-width: 140px; z-index: 60;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .lang-menu.open { display: block; }
+    .lang-menu a {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px; color: var(--muted); text-decoration: none;
+      font-size: 0.85rem; transition: background 0.15s, color 0.15s;
+    }
+    .lang-menu a:hover { background: rgba(253,220,177,0.1); color: var(--text); }
+    .lang-menu a.active { color: var(--accent); font-weight: 600; }
+
+    /* ── HAMBURGER ── */
+    .hamburger {
+      display: none; background: none; border: none;
+      color: var(--muted); cursor: pointer; padding: 8px;
+      font-size: 1.4rem; line-height: 1;
+      order: 1;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      section { padding: 60px 0; }
+      .hero { padding: 80px 0 60px; }
+      .screenshots img { width: 120px; }
+      .nav-inner { position: relative; }
+      .hamburger { display: block; }
+      .nav-links {
+        position: absolute; top: 56px; right: -24px;
+        background: rgba(19,19,19,0.95); backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        flex-direction: column; padding: 20px 32px; gap: 16px;
+        border-bottom: 1px solid rgba(78,69,60,0.2);
+        border-left: 1px solid rgba(78,69,60,0.2);
+        border-radius: 0 0 0 12px;
+        max-height: 0; overflow: hidden;
+        transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+        opacity: 0; padding-top: 0; padding-bottom: 0;
+      }
+      .nav-links.open {
+        max-height: 300px; opacity: 1;
+        padding-top: 20px; padding-bottom: 20px;
+      }
+      .nav-links a { font-size: 1rem; text-align: right; }
+      /* On mobile: flatten lang dropdown into the menu */
+      .lang-dropdown { border-left: none; padding-left: 0; margin-left: 0; border-top: 1px solid var(--border); padding-top: 12px; }
+      .lang-btn { display: none !important; }
+      .lang-menu { display: flex !important; position: static; background: none; border: none; box-shadow: none; padding: 0; margin: 0; min-width: auto; gap: 16px; justify-content: flex-end; flex-wrap: wrap; }
+      .lang-menu a { padding: 0; font-size: 1.4rem; }
+      .lang-menu a span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <img src="https://raw.githubusercontent.com/eboudrant/more-wax/main/static/logo.svg" alt="More'Wax">
+      <span>More'Wax</span>
+    </a>
+    <button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Menu">&#9776;</button>
+    <div class="nav-links">
+      <a href="#features" onclick="this.parentElement.classList.remove('open')">Fonctions</a>
+      <a href="#screenshots" onclick="this.parentElement.classList.remove('open')">Captures</a>
+      <a href="#install" onclick="this.parentElement.classList.remove('open')">Installation</a>
+      <a href="#publish" onclick="this.parentElement.classList.remove('open')">Publier</a>
+      <a href="https://github.com/eboudrant/more-wax" target="_blank">GitHub</a>
+      <div class="lang-dropdown">
+        <button class="lang-btn" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Language">&#x1F1EB;&#x1F1F7;</button>
+        <div class="lang-menu">
+          <a href="../">&#x1F1EC;&#x1F1E7;<span> English</span></a>
+          <a href="../ja/">&#x1F1EF;&#x1F1F5;<span> 日本語</span></a>
+          <a href="./" class="active">&#x1F1EB;&#x1F1F7;<span> Français</span></a>
+          <a href="../de/">&#x1F1E9;&#x1F1EA;<span> Deutsch</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <img src="https://raw.githubusercontent.com/eboudrant/more-wax/main/static/logo.svg" alt="More'Wax" class="hero-logo">
+    <h1>More'Wax</h1>
+    <p class="tagline">Vos vinyles. Votre serveur. Vos règles.</p>
+    <p class="subtitle">Gestionnaire de collection auto-hébergé avec reconnaissance de pochettes par IA, scan de codes-barres et synchronisation Discogs. Tourne sur votre machine, fonctionne sur tout navigateur.</p>
+    <div class="hero-buttons">
+      <a href="#install" class="btn btn-primary">Commencer</a>
+      <a href="https://github.com/eboudrant/more-wax" class="btn btn-secondary" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Voir sur GitHub
+      </a>
+    </div>
+
+    <div class="screenshots fade-in">
+      <img src="../screenshot-dashboard.png" alt="Tableau de bord" loading="lazy">
+      <img src="../screenshot-collection.png" alt="Collection" loading="lazy">
+      <img src="../screenshot-detail.png" alt="Fiche du disque" loading="lazy">
+      <img src="../screenshot-scanner.png" alt="Scanner de codes-barres" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <p class="section-label fade-in">Fonctions</p>
+    <h2 class="section-title fade-in">Tout ce qu'il faut pour gérer vos galettes.</h2>
+    <div class="divider fade-in"></div>
+
+    <div class="features-grid">
+      <div class="feature-card fade-in">
+        <span class="feature-icon">&#x1F4F7;</span>
+        <h3>Scan de codes-barres</h3>
+        <p>Pointez votre caméra vers un code-barres. Quagga.js le détecte en temps réel, puis lance une recherche Discogs pour identifier le pressage exact.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <span class="feature-icon">&#x1F916;</span>
+        <h3>Reconnaissance de pochette par IA</h3>
+        <p>Prenez en photo n'importe quelle pochette. Claude Vision identifie l'album, l'artiste et le pressage en quelques secondes. Environ 0,007 $ par identification.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <span class="feature-icon">&#x1F4BF;</span>
+        <h3>Synchronisation Discogs</h3>
+        <p>Importez votre collection Discogs existante avec détection des doublons. Les différents pressages d'un même album sont signalés automatiquement.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <span class="feature-icon">&#x1F4B0;</span>
+        <h3>Prix du marché</h3>
+        <p>Prix bas, médian et haut en direct depuis la marketplace Discogs. L'actualisation en arrière-plan maintient la valeur de votre collection à jour.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <span class="feature-icon">&#x1F4E4;</span>
+        <h3>Cartes de partage</h3>
+        <p>Générez des images partageables avec la pochette, les détails de la sortie et un QR code. Partage natif sur mobile, téléchargement sur ordinateur.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <span class="feature-icon">&#x1F50D;</span>
+        <h3>Filtres intelligents</h3>
+        <p>Tapez <code>is:</code> pour filtrer par tracklist manquante, sans prix, doublons ou morceaux aimés. L'autocomplétion fantôme vous guide.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <span class="feature-icon">&#x1F512;</span>
+        <h3>Google OAuth</h3>
+        <p>Protégez votre collection lorsqu'elle est exposée en ligne. Accès mono-utilisateur verrouillé dès la première connexion. Authentification contournée automatiquement sur le réseau local.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <span class="feature-icon">&#x1F3E0;</span>
+        <h3>100 % privé</h3>
+        <p>Auto-hébergé. Pas de cloud. Pas de compte. Vos données restent sur votre machine. Serveur Python stdlib sans aucune dépendance pip.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCREENSHOTS -->
+<section id="screenshots" style="background: var(--surface);">
+  <div class="container" style="text-align:center;">
+    <p class="section-label fade-in">Captures d'écran</p>
+    <h2 class="section-title fade-in">Conçu pour les amoureux du vinyle.</h2>
+    <div class="divider fade-in" style="margin-left:auto;margin-right:auto;"></div>
+
+    <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-top:20px;">
+      <div class="fade-in" style="text-align:center;">
+        <img src="../screenshot-dashboard.png" alt="Tableau de bord" style="width:220px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);" loading="lazy">
+        <p style="font-size:0.8rem;color:var(--muted);margin-top:12px;">Tableau de bord</p>
+      </div>
+      <div class="fade-in" style="text-align:center;">
+        <img src="../screenshot-collection.png" alt="Collection" style="width:220px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);" loading="lazy">
+        <p style="font-size:0.8rem;color:var(--muted);margin-top:12px;">Collection</p>
+      </div>
+      <div class="fade-in" style="text-align:center;">
+        <img src="../screenshot-detail.png" alt="Fiche du disque" style="width:220px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);" loading="lazy">
+        <p style="font-size:0.8rem;color:var(--muted);margin-top:12px;">Fiche du disque</p>
+      </div>
+      <div class="fade-in" style="text-align:center;">
+        <img src="../screenshot-scanner.png" alt="Scanner de codes-barres" style="width:220px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);" loading="lazy">
+        <p style="font-size:0.8rem;color:var(--muted);margin-top:12px;">Scanner</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section id="install">
+  <div class="container">
+    <p class="section-label fade-in">Installation</p>
+    <h2 class="section-title fade-in">Opérationnel en 30 secondes.</h2>
+    <p class="section-desc fade-in">Un assistant de configuration vous guide pour connecter votre compte Discogs au premier lancement.</p>
+    <div class="divider fade-in"></div>
+
+    <div class="install-options">
+      <div class="install-card fade-in">
+        <h3>Docker (recommandé)</h3>
+        <pre><code>docker run -d \
+  --name more-wax \
+  -p 8765:8765 -p 8766:8766 \
+  -v morewax-data:/app/data \
+  eboudrant/more-wax:latest</code></pre>
+        <p>Puis ouvrez <strong>https://localhost:8766</strong></p>
+      </div>
+      <div class="install-card fade-in">
+        <h3>Docker Compose</h3>
+        <pre><code>docker compose up -d</code></pre>
+        <p>Puis ouvrez <strong>https://localhost:8766</strong></p>
+      </div>
+      <div class="install-card fade-in">
+        <h3>Depuis les sources</h3>
+        <pre><code>git clone https://github.com/eboudrant/more-wax.git
+cd more-wax
+python3 server.py</code></pre>
+        <p>Puis ouvrez <strong>https://localhost:8766</strong></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PUBLISH ONLINE -->
+<section id="publish" style="background: var(--surface);">
+  <div class="container">
+    <p class="section-label fade-in">Publier en ligne</p>
+    <h2 class="section-title fade-in">Accessible de partout.</h2>
+    <p class="section-desc fade-in">Placez More'Wax derrière un reverse proxy pour y accéder hors de votre réseau local. Google OAuth protège automatiquement votre collection.</p>
+    <div class="divider fade-in"></div>
+
+    <div class="install-options">
+      <div class="install-card fade-in">
+        <h3>Cloudflare Tunnel</h3>
+        <pre><code>cloudflared tunnel --url http://localhost:8765</code></pre>
+        <p>Aucune redirection de port nécessaire. Offre gratuite disponible.</p>
+      </div>
+      <div class="install-card fade-in">
+        <h3>Caddy (HTTPS automatique)</h3>
+        <pre><code>wax.yourdomain.com {
+    reverse_proxy localhost:8765
+}</code></pre>
+        <p>Certificats Let's Encrypt automatiques.</p>
+      </div>
+      <div class="install-card fade-in">
+        <h3>Google OAuth</h3>
+        <pre><code>Settings → Authentication
+→ Paste Client ID &amp; Secret
+→ Enable Authentication</code></pre>
+        <p>La première connexion devient propriétaire. Authentification contournée sur le réseau local.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="https://github.com/eboudrant/more-wax">GitHub</a>
+      <a href="https://hub.docker.com/r/eboudrant/more-wax">Docker Hub</a>
+      <a href="https://github.com/eboudrant/more-wax/blob/main/LICENSE">Licence MIT</a>
+    </div>
+    <p>Construit avec <a href="https://claude.ai/code" target="_blank">Claude Code</a></p>
+  </div>
+</footer>
+
+<!-- SCROLL FADE-IN -->
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+  document.addEventListener('click', (e) => {
+    const menu = document.querySelector('.nav-links');
+    if (menu && menu.classList.contains('open') && !e.target.closest('.nav-links') && !e.target.closest('.hamburger')) {
+      menu.classList.remove('open');
+    }
+    const langMenu = document.querySelector('.lang-menu');
+    if (langMenu && langMenu.classList.contains('open') && !e.target.closest('.lang-dropdown')) {
+      langMenu.classList.remove('open');
+    }
+  });
+</script>
+
+<!-- GoatCounter analytics — privacy-friendly, no cookies -->
+<script data-goatcounter="https://morewax.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+
+</body>
+</html>

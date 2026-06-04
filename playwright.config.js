@@ -1,0 +1,43 @@
+// @ts-check
+const { defineConfig } = require('@playwright/test');
+
+module.exports = defineConfig({
+  testDir: './tests/screenshots',
+  // Platform-independent snapshot names — tests run in Docker so rendering
+  // is identical on macOS dev machines and Linux CI.
+  snapshotPathTemplate: '{snapshotDir}/{projectName}/{arg}{ext}',
+  timeout: 30_000,
+  fullyParallel: true,
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixels: 0,
+    },
+  },
+  use: {
+    baseURL: 'http://127.0.0.1:8765',
+    // Consistent viewport for reproducible screenshots
+    viewport: { width: 390, height: 844 },  // iPhone 14 size
+    deviceScaleFactor: 1,
+    colorScheme: 'dark',
+    // Pin timezone + locale so formatted dates are byte-stable across dev + CI
+    timezoneId: 'UTC',
+    locale: 'en-US',
+  },
+  projects: [
+    {
+      name: 'mobile',
+      use: { viewport: { width: 390, height: 844 } },
+    },
+    {
+      name: 'desktop',
+      use: { viewport: { width: 1280, height: 800 } },
+    },
+  ],
+  // The Python server must be running before tests start
+  webServer: {
+    command: 'python3 server.py',
+    port: 8765,
+    reuseExistingServer: true,
+    timeout: 30_000,
+  },
+});
